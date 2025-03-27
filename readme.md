@@ -3,7 +3,7 @@ Easynium은 2시간 정도 간단히 만들어본 비전공자를 위한 웹제�
 
 모든 문법은 띄어쓰기 단위로 작동하지만, 만약 한 블럭에 띄어쓰기가 들어간다면, 작은따옴표 ```'묶을 문자열'``` 로 묶어주시면 됩니다. 또한 프로그램은 Tab키나 스페이스바 등으로 들여쓰기를 해도 잘 작동합니다. Tab키를 하면 자동으로 띄어쓰기 4번이 삽입되니 if문이나 loop 문을 사용할 때 활용하시면 좋습니다.
 
-Release 메뉴로 가시거나 [Easynium 1.0.zip](https://github.com/user-attachments/files/19473695/Easynium.1.0.zip)를 클릭하시면 다운로드가 가능합니다.
+[Release Download](https://github.com/mefatch/Easynium/releases/tag/Release) 왼쪽 링크를 클릭하시면 Release 탭으로 가서 다운로드가 가능합니다.
 
 # Grammar
 
