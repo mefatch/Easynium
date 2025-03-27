@@ -6,14 +6,14 @@ Easynium은 2시간 정도 간단히 만들어본 비전공자를 위한 웹제�
 # Grammar
 우선 Easynium 대부분의 문법은 ```<명령어> <인자1> <인자2> ...```의 구조를 갖고 있습니다. 각 블럭은 띄어쓰기로 구분됩니다. 예를 들면
 ```
-input 바보 on id InputIdBox
+input 바보 on id: InputIdBox
 wait 3000
 click 400 500
 (...)
 ```
 와 같은 방식입니다. 다만 만약 한 블럭임에도 띄어쓰기가 들어갈 경우, 작은따옴표 ```'묶을 문자열'```로 묶어주시면 됩니다. 예를 들면
 ```
-input '나는 띄어쓰기가 좋아' on xpath '//item[text()="hello world"]'
+input '나는 띄어쓰기가 좋아' on xpath: '//item[text()="hello world"]'
 ```
 처럼 쓰시면 됩니다
 
@@ -71,25 +71,43 @@ end
 ***
 ### if 구문
 ```
-if <웹요소> is <값>
+if <element_type>: <web_element> <operator> <값>
     처리할 코드는 여기에..
 end
 ```
 ```
-if '//*[@id="shortcutArea"]/ul/li[1]/a/span[2]' is '메일'
+if <value1> <operator> <value2>
+    처리할 코드는 여기에..
+end
+```
+
+```
+if xpath: '//*[@id="shortcutArea"]/ul/li[1]/a/span[2]' != '메일'
     처리할 코드는 여기에..
 end
 ```
 웹의 특정 요소의 값과 비교하여 참이면 수행하는 코드입니다. '' 는 띄어쓰기가 있을 때 저렇게 묶어주면 됩니다. 위의 예시에서는 띄어쓰기가 없으니 사실
 ```
-if //*[@id="shortcutArea"]/ul/li[1]/a/span[2] is 메일
+if xpath: //*[@id="shortcutArea"]/ul/li[1]/a/span[2] != 메일
     처리할 코드는 여기에..
 end
 ```
-이렇게 써도 무방합니다.
+이렇게 써도 무방합니다. 웹요소의 경우,
+* 웹 타입 \<element_type\>은 ```xpath:```, ```id:```, ```css:```, ```class:```를 사용할 수 있습니다.
+* 비교 연산자 \<operator\>은 ```=```, ```!=```를 사용할 수 있습니다.
+ 
+<br>
 
-웹요소 외 변수와 값의 비교나 not 연산 등은 아직 구현되지 않았습니다. 추후 구현하겠습니다. Tab키나 스페이스바로 들여쓰기를 활용할 수 있으며, 필수는 아닙니다.
-
+반면 앞에 <\element_type\>을 지정하지 않은 경우, 일반 ```if``` 구문으로 처리합니다.
+```
+if $var1$ >= 10
+    msg '와 10보다 크네유'
+end
+```
+웹 속 값의 비교가 아닌 일반 ```if``` 구문의 경우,
+* 비교 연산자 \<operator\>은 ```=```, ```!=```, ```>```, ```<```, ```>=```, ```<=```를 사용할 수 있습니다.
+* 참고로 ```>```, ```<```, ```>=```, ```<=```로 비교하면 \<value1\>, \<value2\>는 자동으로 숫자로 변환됩니다.
+* ```>```, ```<```, ```>=```, ```<=``` 비교에서 숫자로 변환 불가능하면 ```if```문은 ```false```로 처리됩니다.
 
 <br>
 
@@ -125,25 +143,27 @@ go <url>
 
 ### click 구문
 ```
-click <element-type> <element>
+click <element-type>: <element>
 ```
 ```
 click <X> <Y>
 ```
 click 명령어는 두 가지 방식으로 활용하실 수 있습니다. 제어 중인 웹 브라우저의 특정 요소를 클릭하거나, 화면의 특정 좌표를 마우스 제어로 클릭할 수 있습니다. 예를 들어 ```click xpath //*[@id="shortcutArea"]/ul/li[1]/a/span[2]```를 하면 해당 웹페이지의 저 xpath 요소를 클릭하며, ```click 400 500```을 하면 화면의 (400, 500)을 클릭합니다. 마우스의 현재 좌표는 Easynium이 UI상에 실시간으로 보여주니 참고하시면 될 것 같습니다.
 
-클릭할 웹 요소에 띄어쓰기가 들어갈 경우 위에도 설명한 것처럼 ```click xpath '//*[@id="shortcut Area"]/ul/li[1]/a/span[2]'``` 와 같이 작은 따옴표로 묶어주시면 됩니다. \<element-type\>은 xpath, css, id, class로 4가지가 있습니다.
+클릭할 웹 요소에 띄어쓰기가 들어갈 경우 위에도 설명한 것처럼 ```click xpath: '//*[@id="shortcut Area"]/ul/li[1]/a/span[2]'``` 와 같이 작은 따옴표로 묶어주시면 됩니다.
+* 웹 타입 \<element_type\>은 ```xpath:```, ```id:```, ```css:```, ```class:```를 사용할 수 있습니다.
 
 ***
 
 ### input 구문
 ```
-inpnut <input-string> on <element-type> <element>
+inpnut <input-string> on <element-type>: <element>
 ```
 ```
 input <input-string>
 ```
-input 명령어도 두 가지 방식으로 쓰일 수 있습니다. 첫 번째는 웹 요소를 지정하여 입력하는 것입니다. ```input '피자 만드는 법' on xpath '//*[@id="example xpath"]/ul/input'``` 처럼 쓰면 해당 xpath 요소에 ```피자 만드는 법```을 입력하게 되며, ```input '피자 만드는 법'```이라고만 하면 키보드 제어로 그냥 해당 단어를 입력합니다.
+input 명령어도 두 가지 방식으로 쓰일 수 있습니다. 첫 번째는 웹 요소를 지정하여 입력하는 것입니다. ```input '피자 만드는 법' on xpath: '//*[@id="example xpath"]/ul/input'``` 처럼 쓰면 해당 xpath 요소에 ```피자 만드는 법```을 입력하게 되며, ```input '피자 만드는 법'```이라고만 하면 키보드 제어로 그냥 해당 단어를 입력합니다.
+* 웹 타입 \<element_type\>:은 ```xpath:```, ```id:```, ```css:```, ```class:```를 사용할 수 있습니다.
 
 이 구문의 예시는 띄어쓰기가 있기에 작은따옴표로 묶었을 뿐, ```input 피자```도 당연히 가능합니다.
 
@@ -190,13 +210,14 @@ ex) ```msg '안녕하세요 반갑습니다!'```
 ## 변수 처리
 ### var 구문
 ```
-var <변수명> <변수값>
+var <variable_name> <variable_value>
 ```
 ```
-var <변수명> <웹_유형> <웹_코드>
+var <varuable_name> <element_type>: <web_element>
 ```
-var은 변수를 만들고 수정하는 코드입니다. ```var var1 '피자 만드는 법'```으로 쓸 수도 있고, 웹 제어 중이라면 ```var var1 xpath '//*[@id="shortcut Area"]/ul/li[1]/a/span[2]'```로 웹페이지 내 값을 가져올 수도 있습니다.
-
+var은 변수를 만들고 수정하는 코드입니다. ```var var1 '피자 만드는 법'```으로 쓸 수도 있고, 웹 제어 중이라면 ```var var1 xpath: '//*[@id="shortcut Area"]/ul/li[1]/a/span[2]'```로 웹페이지 내 값을 가져올 수도 있습니다.
+* 웹 타입 \<element_type\>:은 ```xpath:```, ```id:```, ```css:```, ```class:```를 사용할 수 있습니다.
+* 
 추후 사용은 코드 내에서 $var1 과 같이 할 수 있습니다. ex) ```input $var1```
 
 <br>
