@@ -13,18 +13,14 @@ Release 메뉴로 가시거나 [Easynium 1.0.zip](https://github.com/user-attach
 ```
 chrome <number>
 ```
-제어할 크롬 브라우저를 실행합니다. \<number\>는 몇 번째 브라우저 계정으로 열지를 의미합니다. 비워두면 계정 없이 열립니다.
-
-크롬 브라우저의 계정과 Profile 번호를 보고 싶으시다면, Easynium 창에서 Chrome Profile을 누르시면 목록과 번호를 보여줍니다.
+제어할 크롬 브라우저를 실행합니다. \<number\>는 몇 번째 브라우저 계정으로 열지를 의미합니다. 비워두면 계정 없이 열립니다. 크롬 브라우저의 계정과 Profile 번호를 보고 싶으시다면, Easynium 창에서 **Chrome Profile**을 누르시면 목록과 번호를 보여줍니다.
 
 ***
 
 ```
 edge <number>
 ```
-제어할 엣지 브라우저를 실행합니다. \<number\>는 몇 번째 브라우저 계정으로 열지를 의미합니다. 비워두면 계정 없이 열립니다.
-
-엣지 브라우저의 계정과 Profile 번호를 보고 싶으시다면, Easynium 창에서 Edge Profile을 누르시면 목록과 번호를 보여줍니다.
+제어할 엣지 브라우저를 실행합니다. \<number\>는 몇 번째 브라우저 계정으로 열지를 의미합니다. 비워두면 계정 없이 열립니다. 엣지 브라우저의 계정과 Profile 번호를 보고 싶으시다면, Easynium 창에서 **Edge Profile**을 누르시면 목록과 번호를 보여줍니다.
 
 ***
 
