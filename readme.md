@@ -80,7 +80,8 @@ if <value1> <operator> <value2>
     처리할 코드는 여기에..
 end
 ```
-
+<br>
+웹 요소 비교 ```if```구문 예시)
 ```
 if xpath: '//*[@id="shortcutArea"]/ul/li[1]/a/span[2]' != '메일'
     처리할 코드는 여기에..
