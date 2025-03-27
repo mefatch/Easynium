@@ -13,7 +13,7 @@ click 400 500
 ```
 와 같은 방식입니다. 다만 만약 한 블럭임에도 띄어쓰기가 들어갈 경우, 작은따옴표 ```'묶을 문자열'```로 묶어주시면 됩니다. 예를 들면
 ```
-input '나는 띄어쓰기가 좋아' on xpath '//item[text()='hello world']'
+input '나는 띄어쓰기가 좋아' on xpath '//item[text()="hello world"]'
 ```
 처럼 쓰시면 됩니다
 
