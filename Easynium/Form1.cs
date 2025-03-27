@@ -146,10 +146,10 @@ namespace Easynium
 
         HashSet<string> class_element = new HashSet<string>
         {
-            "xpath",
-            "id",
-            "class",
-            "css"
+            "xpath:",
+            "id:",
+            "class:",
+            "css:"
         };
         Dictionary<string, object> vars = new Dictionary<string, object>();
 
@@ -254,6 +254,58 @@ namespace Easynium
             return result;
         }
 
+        public static List<string> SplitWithQuotes(string input)
+        {
+            List<string> result = new List<string>();
+            bool inQuotes = false;
+            char quoteChar = '\'';
+            string current = "";
+
+            for (int i = 0; i < input.Length; i++)
+            {
+                char c = input[i];
+
+                if (c == quoteChar && (i == 0 || input[i - 1] != '\\')) // Handle quotes not escaped
+                {
+                    inQuotes = !inQuotes;
+                    if (!inQuotes) // Closing quote
+                    {
+                        result.Add(current);
+                        current = "";
+                    }
+                    continue;
+                }
+
+                if (!inQuotes && char.IsWhiteSpace(c))
+                {
+                    if (!string.IsNullOrEmpty(current))
+                    {
+                        result.Add(current);
+                        current = "";
+                    }
+                }
+                else
+                {
+                    if (c == '\\' && i + 1 < input.Length && input[i + 1] == quoteChar) // Handle escaped quotes
+                    {
+                        current += quoteChar;
+                        i++; // Skip the next character as it's part of the escape sequence
+                    }
+                    else
+                    {
+                        current += c;
+                    }
+                }
+            }
+
+            if (!string.IsNullOrEmpty(current))
+            {
+                result.Add(current);
+            }
+
+            return result;
+        }
+
         static void ShowStringListInMessageBox(List<string> stringList)
         {
             // 문자열 리스트를 하나의 문자열로 결합
@@ -335,7 +387,32 @@ namespace Easynium
             }
         }
 
-        void Interpreter(string code)
+        By ReturnBy(string type, string code)
+        {
+            By by = null;
+
+            if(String.Equals(type, "xpath:"))
+            {
+                by = By.XPath(code);
+            }
+            else if (String.Equals(type, "id:"))
+            {
+                by = By.Id(code);
+            }
+            else if (String.Equals(type, "class:"))
+            {
+                by = By.ClassName(code);
+            }
+            if (String.Equals(type, "css:"))
+            {
+                by = By.CssSelector(code);
+            }
+
+            if (by == null) by = By.XPath(code);
+            return by;
+        }
+
+        void Interpreter(string code, bool root = true)
         {
             Running = true;
             sublogo.Text = ": Running...";
@@ -365,7 +442,7 @@ namespace Easynium
                     continue;
                 }
 
-                var blocks = SyntaxSplit(line);
+                var blocks = SplitWithQuotes(line); // SyntaxSplit(line);
 
                 if (String.Equals(blocks[0], "chrome"))
                 {
@@ -444,7 +521,23 @@ namespace Easynium
                     }
 
 
-                    driver = new ChromeDriver(chrome_driverService, chrome_options);
+                    try
+                    {
+                        driver = new ChromeDriver(chrome_driverService, chrome_options);
+                    }
+                    catch
+                    {
+                        try
+                        {
+                            if (driver != null)
+                                driver.Quit();
+                        }
+                        catch { }
+
+                        MessageBox.Show("오류가 발생하였습니다. 혹시 프로파일 번호를 지정하셨다면, 해당 계정의 브라우저 창이 이미 열려있지 않은지 확인해주세요.");
+                        sublogo.Text = ": Easynium";
+                        return;
+                    }
                     ((IJavaScriptExecutor)driver).ExecuteScript("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})");
 
 
@@ -521,7 +614,23 @@ namespace Easynium
                     edgeOptions.AddAdditionalOption("useAutomationExtension", false);
 
                     // 드라이버 초기화
-                    driver = new EdgeDriver(edgeDriverService, edgeOptions);
+                    try
+                    {
+                        driver = new EdgeDriver(edgeDriverService, edgeOptions);
+                    }
+                    catch
+                    {
+                        try
+                        {
+                            if (driver != null)
+                                driver.Quit();
+                        }
+                        catch { }
+
+                        MessageBox.Show("오류가 발생하였습니다. 혹시 프로파일 번호를 지정하셨다면, 해당 계정의 브라우저 창이 이미 열려있지 않은지 확인해주세요.");
+                        sublogo.Text = ": Easynium";
+                        return;
+                    }
 
                     // webdriver 속성 숨기기 (JS에서 탐지 우회)
                     ((IJavaScriptExecutor)driver).ExecuteScript(
@@ -569,7 +678,7 @@ namespace Easynium
                     {
                         while (true)
                         {
-                            Interpreter(loopcode);
+                            Interpreter(loopcode, false);
                         }
                     }
                     else
@@ -578,90 +687,172 @@ namespace Easynium
 
                         for (int j = 0; j < Convert.ToInt32(blocks[1]); j++)
                         {
-                            Interpreter(loopcode);
+                            Interpreter(loopcode, false);
                         }
                     }
                 }
 
                 else if (String.Equals(blocks[0], "if"))
                 {
-                    if (IsSeleniumStarted)
-                    {
-                        bool iftrue = false;
-                        int type = DetermineSelectorType(blocks[1]);
+                    bool iftrue = false;
+                    bool oper = true;//operator
+                    By ByObj = null;
 
-                        if (blocks.Count >= 4)
+                    if (class_element.Contains(blocks[1]))
+                    {
+                        if (IsSeleniumStarted)
                         {
-                            if (String.Equals(blocks[2], "is"))
+                            if (blocks.Count >= 5)
                             {
+                                if (String.Equals(blocks[3], "="))
+                                {
+                                    oper = true;
+                                }
+                                else
+                                {
+                                    oper = false;
+                                }
                                 try
                                 {
-                                    if (type == 0) //xpath
+                                    ByObj = ReturnBy(blocks[1], blocks[2]);
+
+                                    if (ByObj != null)
                                     {
-                                        if (String.Equals(driver.FindElement(By.XPath(blocks[1])).Text, blocks[3]))
-                                        {
-                                            iftrue = true;
-                                        }
-                                    }
-                                    else if (type == 1) //id
-                                    {
-                                        if (String.Equals(driver.FindElement(By.Id(blocks[1])), blocks[3]))
-                                        {
-                                            iftrue = true;
-                                        }
-                                    }
-                                    else if (type == 2) //xpath
-                                    {
-                                        if (String.Equals(driver.FindElement(By.CssSelector(blocks[1])), blocks[3]))
-                                        {
-                                            iftrue = true;
-                                        }
-                                    }
-                                    else if (type == 3) //xpath
-                                    {
-                                        if (String.Equals(driver.FindElement(By.ClassName(blocks[1])), blocks[3]))
+                                        if (String.Equals(driver.FindElement(ByObj).Text, blocks[4]) == oper)
                                         {
                                             iftrue = true;
                                         }
                                     }
                                 }
                                 catch { }
-
-                                if (iftrue)
+                            }
+                        }
+                    }
+                    else if(blocks.Count >= 4)
+                    {
+                        if (String.Equals(blocks[2], "="))
+                        {
+                            if (String.Equals(blocks[1], blocks[3]))
+                            {
+                                iftrue = true;
+                            }
+                        }
+                        else if (String.Equals(blocks[2], "!="))
+                        {
+                            if (String.Equals(blocks[1], blocks[3]) == false)
+                            {
+                                iftrue = true;
+                            }
+                        }
+                        else if (String.Equals(blocks[2], ">"))
+                        {
+                            try
+                            {
+                                if (Convert.ToDecimal(blocks[1]) > Convert.ToDecimal(blocks[3]))
                                 {
-                                    int stack = 0;
-                                    string ifcode = "";
-                                    string[] temp;
-                                    for (int j = i + 1; j < lines.Length; j++)
-                                    {
-                                        temp = lines[j].TrimStart().Split();
-
-                                        if (String.Equals(temp[0], "end"))
-                                        {
-                                            if (stack > 0)
-                                            {
-                                                stack -= 1;
-                                            }
-                                            else
-                                            {
-                                                i = j;
-                                                break;
-                                            }
-                                        }
-                                        else if (String.Equals(temp[0], "if"))
-                                        {
-                                            stack += 1;
-                                        }
-                                        else if (String.Equals(temp[0], "loop"))
-                                        {
-                                            stack += 1;
-                                        }
-
-                                        ifcode = ifcode + Environment.NewLine + lines[j];
-                                    }
-
-                                    Interpreter(ifcode);
+                                    iftrue = true;
                                 }
+                            }
+                            catch { }
+                        }
+                        else if (String.Equals(blocks[2], "<"))
+                        {
+                            try
+                            {
+                                if (Convert.ToDecimal(blocks[1]) < Convert.ToDecimal(blocks[3]))
+                                {
+                                    iftrue = true;
+                                }
+                            }
+                            catch { }
+                        }
+                        else if (String.Equals(blocks[2], ">="))
+                        {
+                            try
+                            {
+                                if (Convert.ToDecimal(blocks[1]) >= Convert.ToDecimal(blocks[3]))
+                                {
+                                    iftrue = true;
+                                }
+                            }
+                            catch { }
+                        }
+                        else if (String.Equals(blocks[2], "<="))
+                        {
+                            try
+                            {
+                                if (Convert.ToDecimal(blocks[1]) <= Convert.ToDecimal(blocks[3]))
+                                {
+                                    iftrue = true;
+                                }
+                            }
+                            catch { }
+                        }
+                    }
+
+
+                    if (iftrue)
+                    {
+                        int stack = 0;
+                        string ifcode = "";
+                        string[] temp;
+                        for (int j = i + 1; j < lines.Length; j++)
+                        {
+                            temp = lines[j].TrimStart().Split();
+
+                            if (String.Equals(temp[0], "end"))
+                            {
+                                if (stack > 0)
+                                {
+                                    stack -= 1;
+                                }
+                                else
+                                {
+                                    i = j;
+                                    break;
+                                }
+                            }
+                            else if (String.Equals(temp[0], "if"))
+                            {
+                                stack += 1;
+                            }
+                            else if (String.Equals(temp[0], "loop"))
+                            {
+                                stack += 1;
+                            }
+
+                            ifcode = ifcode + Environment.NewLine + lines[j];
+                        }
+
+                        Interpreter(ifcode, false);
+                    }
+                    else
+                    {
+                        string[] temp;
+                        int stack = 0;
+                        for (int j = i + 1; j < lines.Length; j++)
+                        {
+                            temp = lines[j].TrimStart().Split();
+
+                            if (String.Equals(temp[0], "end"))
+                            {
+                                if (stack > 0)
+                                {
+                                    stack -= 1;
+                                }
+                                else
+                                {
+                                    i = j;
+                                    break;
+                                }
+                            }
+                            else if (String.Equals(temp[0], "if"))
+                            {
+                                stack += 1;
+                            }
+                            else if (String.Equals(temp[0], "loop"))
+                            {
+                                stack += 1;
                             }
                         }
                     }
@@ -674,7 +865,7 @@ namespace Easynium
                     {
                         if(waittime > 10000)
                         {
-                            int chunkSize = 1000; // 1000ms (1초) 단위로 나눔
+                            int chunkSize = 500; // 1000ms (1초) 단위로 나눔
 
                             while (waittime > 0 && !isClosing)
                             {
@@ -714,7 +905,10 @@ namespace Easynium
 
                 else if (String.Equals(blocks[0], "refresh"))
                 {
-                    driver.Navigate().Refresh();
+                    if (IsSeleniumStarted)
+                    {
+                        driver.Navigate().Refresh();
+                    }
                 }
 
                 else if (String.Equals(blocks[0], "go"))
@@ -728,42 +922,14 @@ namespace Easynium
 
                 else if (String.Equals(blocks[0], "click"))
                 {
+                    By ByObj = null;
+
                     if (class_element.Contains(blocks[1]))
                     {
                         if (IsSeleniumStarted)
                         {
-                            if (String.Equals(blocks[1], "xpath"))
-                            {
-                                try
-                                {
-                                    driver.FindElement(By.XPath(blocks[2])).Click();
-                                }
-                                catch { }
-                            }
-                            else if (String.Equals(blocks[1], "id"))
-                            {
-                                try
-                                {
-                                    driver.FindElement(By.Id(blocks[2])).Click();
-                                }
-                                catch { }
-                            }
-                            else if (String.Equals(blocks[1], "css"))
-                            {
-                                try
-                                {
-                                    driver.FindElement(By.CssSelector(blocks[2])).Click();
-                                }
-                                catch { }
-                            }
-                            else if (String.Equals(blocks[1], "class"))
-                            {
-                                try
-                                {
-                                    driver.FindElement(By.ClassName(blocks[2])).Click();
-                                }
-                                catch { }
-                            }
+                            ByObj = ReturnBy(blocks[1], blocks[2]);
+                            driver.FindElement(ByObj).Click();
                         }
                     }
                     else
@@ -789,38 +955,8 @@ namespace Easynium
                         {
                             if (String.Equals(blocks[2], "on"))
                             {
-                                if (String.Equals(blocks[3], "xpath"))
-                                {
-                                    try
-                                    {
-                                        driver.FindElement(By.XPath(blocks[4])).SendKeys(blocks[1]);
-                                    }
-                                    catch { }
-                                }
-                                else if (String.Equals(blocks[3], "id"))
-                                {
-                                    try
-                                    {
-                                        driver.FindElement(By.Id(blocks[4])).SendKeys(blocks[1]);
-                                    }
-                                    catch { }
-                                }
-                                else if (String.Equals(blocks[3], "css"))
-                                {
-                                    try
-                                    {
-                                        driver.FindElement(By.CssSelector(blocks[4])).SendKeys(blocks[1]);
-                                    }
-                                    catch { }
-                                }
-                                else if (String.Equals(blocks[3], "class"))
-                                {
-                                    try
-                                    {
-                                        driver.FindElement(By.ClassName(blocks[4])).SendKeys(blocks[1]);
-                                    }
-                                    catch { }
-                                }
+                                By ByObj = ReturnBy(blocks[3], blocks[4]);
+                                driver.FindElement(ByObj).SendKeys(blocks[1]);
                             }
                         }
                     }
@@ -841,38 +977,12 @@ namespace Easynium
                     {
                         if (class_element.Contains(blocks[2]))
                         {
-                            if (String.Equals(blocks[2], "xpath"))
+                            By ByObj = ReturnBy(blocks[2], blocks[3]);
+                            try
                             {
-                                try
-                                {
-                                    vars[blocks[1]] = driver.FindElement(By.XPath(blocks[3])).Text;
-                                }
-                                catch { }
+                                vars[blocks[1]] = driver.FindElement(ByObj).Text;
                             }
-                            else if (String.Equals(blocks[2], "id"))
-                            {
-                                try
-                                {
-                                    vars[blocks[1]] = driver.FindElement(By.Id(blocks[3])).Text;
-                                }
-                                catch { }
-                            }
-                            else if (String.Equals(blocks[2], "css"))
-                            {
-                                try
-                                {
-                                    vars[blocks[1]] = driver.FindElement(By.CssSelector(blocks[3])).Text;
-                                }
-                                catch { }
-                            }
-                            else if (String.Equals(blocks[2], "class"))
-                            {
-                                try
-                                {
-                                    vars[blocks[1]] = driver.FindElement(By.ClassName(blocks[3])).Text;
-                                }
-                                catch { }
-                            }
+                            catch { }
                         }
                         else
                         {
@@ -946,9 +1056,17 @@ namespace Easynium
                     {
                         simulator.Keyboard.ModifiedKeyStroke(VirtualKeyCode.CONTROL, VirtualKeyCode.VK_A);
                     }
+                    else if (String.Equals(blocks[1], "b"))
+                    {
+                        simulator.Keyboard.ModifiedKeyStroke(VirtualKeyCode.CONTROL, VirtualKeyCode.VK_B);
+                    }
                     else if (String.Equals(blocks[1], "c"))
                     {
                         simulator.Keyboard.ModifiedKeyStroke(VirtualKeyCode.CONTROL, VirtualKeyCode.VK_C);
+                    }
+                    else if (String.Equals(blocks[1], "s"))
+                    {
+                        simulator.Keyboard.ModifiedKeyStroke(VirtualKeyCode.CONTROL, VirtualKeyCode.VK_S);
                     }
                     else if (String.Equals(blocks[1], "v"))
                     {
@@ -967,8 +1085,11 @@ namespace Easynium
                     catch { }
                 }
             }
-
-            Running = false;
+            if (root)
+            {
+                sublogo.Text = ": Easynium";
+                Running = false;
+            }
         }
 
         private void Logo_MouseDown(object sender, MouseEventArgs e)
