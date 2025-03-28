@@ -103,7 +103,7 @@ end
 
 반면 앞에 \<element_type\>을 지정하지 않은 경우, 일반 ```if``` 구문으로 처리합니다.
 ```
-if $var1$ >= 10
+if $var1 >= 10
     msg '와 10보다 크네유'
 end
 ```
@@ -220,7 +220,7 @@ var <varuable_name> <element_type>: <web_element>
 ```
 var은 변수를 만들고 수정하는 코드입니다. ```var var1 '피자 만드는 법'```으로 쓸 수도 있고, 웹 제어 중이라면 ```var var1 xpath: '//*[@id="shortcut Area"]/ul/li[1]/a/span[2]'```로 웹페이지 내 값을 가져올 수도 있습니다.
 * 웹 타입 \<element_type\>:은 ```xpath:```, ```id:```, ```css:```, ```class:```를 사용할 수 있습니다.
-* 
+
 추후 사용은 코드 내에서 $var1 과 같이 할 수 있습니다. ex) ```input $var1```
 
 <br>
